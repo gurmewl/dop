@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aphex Twin // Neobrutalism</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Custom CSS for Neobrutalism & Aphex Twin vibe */
+        :root { 
+            --bg-color: #f0f0f0; /* Light industrial grey */
+            --text-color: #1a1a1a; /* Dark text */
+            --accent-color-1: #ff00ff; /* Neon magenta */
+            --accent-color-2: #00ffff; /* Neon cyan */
+            --border-color: #1a1a1a; /* Strong black borders */
+            --shadow-color: #1a1a1a; /* Black shadow */
+        }
+
+        body {
+            font-family: 'Space Mono', monospace; /* Default to Space Mono for brutalist feel */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            overflow-x: hidden; /* Prevent horizontal scroll from extreme positioning */
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="5" fill="%23ff00ff" stroke="%2300ffff" stroke-width="1"/></svg>') 10 10, auto; /* Custom cursor */
+            transition: background-color 0.5s ease; /* Smooth transition for theme changes */
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Inter', sans-serif; /* Inter for headings for better readability */
+            font-weight: 700;
+        }
+
+        /* Brutalist common styles */
+        .brutal-border {
+            border: 2px solid var(--border-color);
+            box-shadow: 6px 6px 0px var(--shadow-color);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .brutal-border:hover {
+            box-shadow: 3px 3px 0px var(--shadow-color);
+            transform: translate(3px, 3px);
+        }
+
+        .brutal-button {
+            @apply brutal-border px-6 py-3 bg-accent-color-1 text-white uppercase tracking-wider text-sm font-bold;
+            background-color: var(--accent-color-1);
+            color: var(--bg-color);
+            border-color: var(--border-color);
+            box-shadow: 6px 6px 0px var(--shadow-color);
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        .brutal-button:hover {
+            background-color: var(--accent-color-2);
+            color: var(--text-color);
+        }
+
+        /* Glitch effect on text - pseudo-elements for displacement */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+            color: var(--text-color);
+        }
+
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            color: var(--accent-color-1);
+            filter: drop-shadow(0 0 5px var(--accent-color-1));
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--accent-color-1);
+            animation: glitch-anim-1 2s infinite alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--accent-color-2);
+            animation: glitch-anim-2 3s infinite alternate-reverse;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% {
+                clip-path: inset(30% 0 70% 0);
+                transform: translateX(-5px);
+            }
+            25% {
+                clip-path: inset(10% 0 90% 0);
+                transform: translateX(5px);
+            }
+            50% {
+                clip-path: inset(60% 0 40% 0);
+                transform: translateX(-3px);
+            }
+            75% {
+                clip-path: inset(20% 0 80% 0);
+                transform: translateX(3px);
+            }
+            100% {
+                clip-path: inset(50% 0 50% 0);
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% {
+                clip-path: inset(20% 0 80% 0);
+                transform: translateX(3px);
+            }
+            25% {
+                clip-path: inset(70% 0 30% 0);
+                transform: translateX(-5px);
+            }
+            50% {
+                clip-path: inset(40% 0 60% 0);
+                transform: translateX(2px);
+            }
+            75% {
+                clip-path: inset(90% 0 10% 0);
+                transform: translateX(-2px);
+            }
+            100% {
+                clip-path: inset(50% 0 50% 0);
+                transform: translateX(0);
+            }
+        }
+
+        /* Hero section specific styling */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden; /* Hide any overflow from 3D canvas */
+        }
+
+        #three-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            /* Ensure canvas fills container and is responsive */
+            display: block;
+            background-color: var(--bg-color); /* Matches body background */
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 2rem;
+            max-width: 90%;
+        }
+
+        /* Music visualization specific styling */
+        #visualizer-container {
+            width: 100%;
+            max-width: 800px;
+            height: 200px;
+            margin: 2rem auto;
+            border: 2px solid var(--border-color);
+            box-shadow: 6px 6px 0px var(--shadow-color);
+            overflow: hidden;
+            position: relative;
+        }
+
+        #visualizer-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: var(--text-color); /* Dark background for visualization */
+        }
+
+        /* Secret section styling */
+        #secret-message {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 2rem;
+            background-color: var(--accent-color-1);
+            color: var(--bg-color);
+            border: 2px solid var(--border-color);
+            box-shadow: 10px 10px 0px var(--shadow-color);
+            text-align: center;
+            font-size: 1.5rem;
+            z-index: 1000;
+        }
+
+        /* Modal for LLM Interpretation */
+        .llm-modal-overlay {
+            display: none; /* Hidden by default, toggled by JS */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+        }
+
+        .llm-modal-content {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 2rem;
+            border: 2px solid var(--border-color);
+            box-shadow: 10px 10px 0px var(--shadow-color);
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+            border-radius: 8px; /* Rounded corners for the modal */
+        }
+
+        .llm-modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-color);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0.5rem;
+            border-radius: 50%; /* Make close button circular */
+            transition: background-color 0.2s;
+        }
+
+        .llm-modal-close-btn:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .brutal-border {
+                box-shadow: 4px 4px 0px var(--shadow-color);
+            }
+            .brutal-border:hover {
+                box-shadow: 2px 2px 0px var(--shadow-color);
+                transform: translate(2px, 2px);
+            }
+            .glitch-text::before { left: 1px; text-shadow: -1px 0 var(--accent-color-1); }
+            .glitch-text::after { left: -1px; text-shadow: -1px 0 var(--accent-color-2); }
+            .hero-content h1 { font-size: 3rem; }
+            .hero-content p { font-size: 1rem; }
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --border-color: #f0f0f0;
+            --shadow-color: #f0f0f0;
+        }
+
+        .dark-mode .brutal-button {
+            background-color: var(--accent-color-1);
+            color: var(--bg-color);
+            border-color: var(--border-color);
+            box-shadow: 6px 6px 0px var(--shadow-color);
+        }
+
+        .dark-mode .brutal-button:hover {
+            background-color: var(--accent-color-2);
+            color: var(--text-color);
+        }
+
+        .dark-mode .glitch-text {
+            color: var(--text-color);
+        }
+
+        .dark-mode #visualizer-canvas {
+            background-color: #000;
+        }
+
+        .section-separator {
+            width: 100%;
+            height: 2px;
+            background-color: var(--border-color);
+            margin: 4rem 0;
+            position: relative;
+        }
+        .section-separator::before,
+        .section-separator::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-color-1);
+            border: 2px solid var(--border-color);
+            box-shadow: 2px 2px 0px var(--shadow-color);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .section-separator::before { left: 0; }
+        .section-separator::after { right: 0; }
+
+        /* General layout for sections */
+        .content-section {
+            padding: 4rem 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .flex-col-reverse-mobile {
+            flex-direction: column-reverse;
+        }
+
+        @media (min-width: 768px) {
+            .flex-col-reverse-mobile {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body class="font-mono">
+    <header class="fixed top-0 left-0 w-full p-4 z-50">
+        <nav class="flex justify-between items-center">
+            <a href="#" class="text-xl font-bold brutal-text-shadow">APX ///</a>
+            <div class="space-x-4 flex">
+                <a href="#bio" class="brutal-button hidden md:block">Bio</a>
+                <a href="#discography" class="brutal-button hidden md:block">Discography</a>
+                <a href="#facts" class="brutal-button hidden md:block">Facts</a>
+                <button id="theme-toggle" class="brutal-button text-sm">TOGGLE <span class="hidden md:inline">THEME</span></button>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero-section relative bg-gray-100 flex items-center justify-center text-center">
+        <canvas id="three-canvas"></canvas>
+        <div class="hero-content">
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-4 glitch-text" data-text="A P H E X T W I N">A P H E X T W I N</h1>
+            <p class="text-lg md:text-xl mb-8 brutal-border p-4 inline-block bg-white bg-opacity-70">
+                // ANALOG CHAOS // DIGITAL REALITY //
+            </p>
+            <button id="explore-button" class="brutal-button text-xl">EXPLORE NOISE</button>
+        </div>
+    </section>
+
+    <div id="secret-message">
+        <p>SECRET CHANNEL ACTIVATED.</p>
+        <p>YOU FOUND THE GLITCH.</p>
+    </div>
+
+    <section id="bio" class="content-section bg-gray-50 brutal-border my-8 p-6 md:p-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8 glitch-text" data-text="BIOGRAPHY // FRAGMENTED">BIOGRAPHY // FRAGMENTED</h2>
+        <div class="md:flex md:space-x-8">
+            <div class="md:w-1/2 mb-8 md:mb-0">
+                <img src="https://placehold.co/600x400/999999/FFFFFF?text=APHEX+TWIN+BIO+IMAGE" alt="Aphex Twin (Placeholder)" class="w-full h-auto brutal-border mb-4">
+                <p class="text-sm italic text-gray-600">Image: Richard D. James, The Architect of Sound.</p>
+            </div>
+            <div class="md:w-1/2 text-lg leading-relaxed">
+                <p class="mb-4">
+                    Richard David James, widely known as Aphex Twin, emerged from the Cornish rave scene in the late 1980s,
+                    quickly establishing himself as one of electronic music's most influential and enigmatic figures.
+                    His early releases on labels like Rephlex Records, co-founded with Grant Wilson-Claridge,
+                    showcased a unique blend of ambient textures, abrasive breakbeats, and intricate melodies,
+                    often dubbed "intelligent dance music" (IDM).
+                </p>
+                <p class="mb-4">
+                    His work spans a vast sonic landscape, from the serene beauty of "Selected Ambient Works 85–92"
+                    to the frenetic, distorted chaos of "Come to Daddy" and the complex algorithms of "Drukqs."
+                    James's pioneering use of synthesis, sampling, and experimental production techniques has
+                    left an indelible mark on contemporary music, inspiring countless artists across genres.
+                </p>
+                <p>
+                    Beyond the music, Aphex Twin maintains an aura of mystery,
+                    with his distinctive logo and cryptic public persona becoming iconic in their own right.
+                    His influence extends far beyond the dance floor, touching on experimental art, digital culture,
+                    and the very definition of electronic sound.
+                </p>
+                <p class="mt-4 text-xs text-right opacity-70">
+                    // DATA CORRUPTED // CONTINUE? //
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-separator"></div>
+
+    <section id="discography" class="content-section brutal-border my-8 p-6 md:p-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8 glitch-text" data-text="DISCOGRAPHY // ECHOS">DISCOGRAPHY // ECHOS</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Album 1: Selected Ambient Works 85–92 -->
+            <div class="album-card brutal-border p-4 bg-gray-100 flex flex-col items-center">
+                <img src="https://placehold.co/300x300/6A0DAD/FFFFFF?text=SAW+85-92" alt="Selected Ambient Works 85-92" class="w-full brutal-border mb-4">
+                <h3 class="text-xl font-bold mb-2">Selected Ambient Works 85–92</h3>
+                <p class="text-sm text-gray-700 mb-4">Released: 1992</p>
+                <div class="flex flex-col space-y-2">
+                    <!-- Updated to use full GitHub raw URL for audio -->
+                    <button data-album-title="Selected Ambient Works 85–92" data-audio-url="https://github.com/gurmewl/dop/raw/refs/heads/main/matereal/Audio/Aphex%20Twin%20%E2%80%93%20Xtal.mp3" class="brutal-button play-track-btn text-xs">VISUALIZE AUDIO</button>
+                    <button data-album-title="Selected Ambient Works 85–92" class="brutal-button interpret-album-btn text-xs">✨ INTERPRET ABSTRACTION ✨</button>
+                </div>
+            </div>
+            <!-- Album 2: Selected Ambient Works Volume II -->
+            <div class="album-card brutal-border p-4 bg-gray-100 flex flex-col items-center">
+                <img src="https://placehold.co/300x300/4B0082/FFFFFF?text=SAW+II" alt="Selected Ambient Works Volume II" class="w-full brutal-border mb-4">
+                <h3 class="text-xl font-bold mb-2">Selected Ambient Works Volume II</h3>
+                <p class="text-sm text-gray-700 mb-4">Released: 1994</p>
+                <div class="flex flex-col space-y-2">
+                    <!-- Updated to use full GitHub raw URL for audio -->
+                    <button data-album-title="Selected Ambient Works Volume II" data-audio-url="https://github.com/gurmewl/dop/raw/refs/heads/main/matereal/Audio/Selected%20Ambient%20Works%20Volume%20II%20CD%201%20TRACK%203%20(320).mp3" class="brutal-button play-track-btn text-xs">VISUALIZE AUDIO</button>
+                    <button data-album-title="Selected Ambient Works Volume II" class="brutal-button interpret-album-btn text-xs">✨ INTERPRET ABSTRACTION ✨</button>
+                </div>
+            </div>
+            <!-- Album 3: Richard D. James Album -->
+            <div class="album-card brutal-border p-4 bg-gray-100 flex flex-col items-center">
+                <img src="https://placehold.co/300x300/800080/FFFFFF?text=RICHARD+D+JAMES" alt="Richard D. James Album" class="w-full brutal-border mb-4">
+                <h3 class="text-xl font-bold mb-2">Richard D. James Album</h3>
+                <p class="text-sm text-gray-700 mb-4">Released: 1996</p>
+                <div class="flex flex-col space-y-2">
+                    <!-- Updated to use full GitHub raw URL for audio -->
+                    <button data-album-title="Richard D. James Album" data-audio-url="https://github.com/gurmewl/dop/raw/refs/heads/main/matereal/Audio/Come%20To%20Daddy%20CD%201%20TRACK%201%20(320).mp3" class="brutal-button play-track-btn text-xs">VISUALIZE AUDIO</button>
+                    <button data-album-title="Richard D. James Album" class="brutal-button interpret-album-btn text-xs">✨ INTERPRET ABSTRACTION ✨</button>
+                </div>
+            </div>
+            <!-- Album 4: Drukqs -->
+            <div class="album-card brutal-border p-4 bg-gray-100 flex flex-col items-center">
+                <img src="https://placehold.co/300x300/A020F0/FFFFFF?text=DRUKQS" alt="Drukqs" class="w-full brutal-border mb-4">
+                <h3 class="text-xl font-bold mb-2">Drukqs</h3>
+                <p class="text-sm text-gray-700 mb-4">Released: 2001</p>
+                <div class="flex flex-col space-y-2">
+                    <!-- Updated to use full GitHub raw URL for audio -->
+                    <button data-album-title="Drukqs" data-audio-url="https://github.com/gurmewl/dop/raw/refs/heads/main/matereal/Audio/Drukqs%20CD%201%20TRACK%209%20(320).mp3" class="brutal-button play-track-btn text-xs">VISUALIZE AUDIO</button>
+                    <button data-album-title="Drukqs" class="brutal-button interpret-album-btn text-xs">✨ INTERPRET ABSTRACTION ✨</button>
+                </div>
+            </div>
+            <!-- Album 5: Syro -->
+            <div class="album-card brutal-border p-4 bg-gray-100 flex flex-col items-center">
+                <img src="https://placehold.co/300x300/4B0082/FFFFFF?text=SYRO" alt="Syro" class="w-full brutal-border mb-4">
+                <h3 class="text-xl font-bold mb-2">Syro</h3>
+                <p class="text-sm text-gray-700 mb-4">Released: 2014</p>
+                <div class="flex flex-col space-y-2">
+                    <!-- Updated to use full GitHub raw URL for audio -->
+                    <button data-album-title="Syro" data-audio-url="https://github.com/gurmewl/dop/raw/refs/heads/main/matereal/Audio/I%20Care%20Because%20You%20Do%20CD%201%20TRACK%2010%20(320).mp3" class="brutal-button play-track-btn text-xs">VISUALIZE AUDIO</button>
+                    <button data-album-title="Syro" class="brutal-button interpret-album-btn text-xs">✨ INTERPRET ABSTRACTION ✨</button>
+                </div>
+            </div>
+            <!-- Album 6: Collapse EP -->
+            <div class="album-card brutal-border p-4 bg-gray-100 flex flex-col items-center">
+                <img src="https://placehold.co/300x300/6A0DAD/FFFFFF?text=COLLAPSE" alt="Collapse EP" class="w-full brutal-border mb-4">
+                <h3 class="text-xl font-bold mb-2">Collapse EP</h3>
+                <p class="text-sm text-gray-700 mb-4">Released: 2018</p>
+                <div class="flex flex-col space-y-2">
+                    <!-- Updated to use full GitHub raw URL for audio -->
+                    <button data-album-title="Collapse EP" data-audio-url="https://github.com/gurmewl/dop/raw/refs/heads/main/matereal/Audio/Windowlicker%20CD%201%20TRACK%201%20(320).mp3" class="brutal-button play-track-btn text-xs">VISUALIZE AUDIO</button>
+                    <button data-album-title="Collapse EP" class="brutal-button interpret-album-btn text-xs">✨ INTERPRET ABSTRACTION ✨</button>
+                </div>
+            </div>
+        </div>
+        <div id="visualizer-container" class="mt-12">
+            <canvas id="visualizer-canvas"></canvas>
+            <p class="text-center text-sm mt-2 opacity-80">
+                Playing: <span id="current-track-name">No track selected</span>
+                <span id="player-status" class="ml-4">(Stopped)</span>
+            </p>
+            <div class="flex justify-center mt-4 space-x-4">
+                <button id="pause-button" class="brutal-button text-xs hidden">PAUSE</button>
+                <button id="resume-button" class="brutal-button text-xs hidden">RESUME</button>
+                <button id="stop-button" class="brutal-button text-xs hidden">STOP</button>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-separator"></div>
+
+    <section id="facts" class="content-section bg-gray-50 brutal-border my-8 p-6 md:p-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8 glitch-text" data-text="FUNNY FACTS // ANOMALIES">FUNNY FACTS // ANOMALIES</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="brutal-border p-6 bg-gray-100 hover:rotate-1 hover:scale-105 transition-all duration-300">
+                <h3 class="text-2xl font-bold mb-2">The Aphex Face</h3>
+                <p>
+                    Richard D. James's distorted face has become a signature element of his album art and music videos.
+                    It's unsettling, iconic, and perfectly encapsulates his unique artistic vision.
+                </p>
+            </div>
+            <div class="brutal-border p-6 bg-gray-100 hover:-rotate-1 hover:scale-105 transition-all duration-300">
+                <h3 class="text-2xl font-bold mb-2">The Hidden Image in Audio</h3>
+                <p>
+                    On the track "Equation" from the "Windowlicker" single, if you run the audio through a spectrogram,
+                    a distorted image of Aphex Twin's face becomes visible. A true sonic easter egg!
+                </p>
+            </div>
+            <div class="brutal-border p-6 bg-gray-100 hover:rotate-2 hover:scale-105 transition-all duration-300">
+                <h3 class="text-2xl font-bold mb-2">Tank Driver</h3>
+                <p>
+                    James famously acquired an armored scout car (tank) and drove it around his hometown of Cornwall,
+                    even allegedly driving it to a club. Because, why not?
+                </p>
+            </div>
+            <div class="brutal-border p-6 bg-gray-100 hover:-rotate-2 hover:scale-105 transition-all duration-300">
+                <h3 class="text-2xl font-bold mb-2">Dream Diary Music</h3>
+                <p>
+                    He has claimed to compose music based on lucid dreams, even going as far as setting up equipment
+                    next to his bed to record ideas immediately upon waking.
+                </p>
+            </div>
+        </div>
+        <div class="text-center mt-12">
+            <button id="generate-aphex-fact" class="brutal-button text-base mt-4">✨ GENERATE MORE ANOMALIES ✨</button>
+            <div id="generated-fact-container" class="mt-6 brutal-border p-6 bg-gray-100 hidden mx-auto max-w-lg">
+                <h3 class="text-2xl font-bold mb-2">Generated Anomaly</h3>
+                <p id="generated-fact-text" class="italic text-lg"></p>
+                <p id="fact-loading-indicator" class="text-sm text-gray-500 mt-2 hidden">Generating...</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-separator"></div>
+
+    <section id="synaptic-shift" class="content-section brutal-border my-8 p-6 md:p-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-8 glitch-text" data-text="SYNAPTIC SHIFT // VISUALIZE THOUGHT">SYNAPTIC SHIFT // VISUALIZE THOUGHT</h2>
+        <p class="mb-6 text-lg leading-relaxed">
+            Enter a fragmented thought, a concept, or a single word. The neural networks will attempt to
+            synthesize a visual mood from your input, subtly altering the 3D object on the hero screen.
+        </p>
+        <div class="flex flex-col md:flex-row md:space-x-4 items-stretch">
+            <textarea id="visual-query-input" rows="3" class="flex-grow p-4 mb-4 md:mb-0 brutal-border bg-gray-200 text-gray-800" placeholder="e.g., 'entropic patterns', 'crystalline echoes', 'suburban decay'..."></textarea>
+            <button id="generate-visual-btn" class="brutal-button text-base whitespace-nowrap self-stretch">INITIATE VISUAL SYNTHESIS</button>
+        </div>
+        <div id="visual-output-container" class="mt-6 brutal-border p-6 bg-gray-100 hidden mx-auto max-w-lg">
+            <h3 class="text-2xl font-bold mb-2">Synthesized Visual Mood</h3>
+            <p id="visual-mood-text" class="italic text-lg"></p>
+            <p id="visual-loading-indicator" class="text-sm text-gray-500 mt-2 hidden">Processing synaptic data...</p>
+        </div>
+    </section>
+
+    <div class="section-separator"></div>
+
+    <footer class="p-8 text-center text-sm brutal-border mt-8 bg-gray-100">
+        <p>&copy; 2025 APHEX TWIN // NEOBRUTALISM PROJECT</p>
+        <p class="mt-2 text-xs opacity-70">
+            THIS SITE IS A FAN TRIBUTE. ALL RIGHTS TO ORIGINAL CONTENT BELONG TO THEIR RESPECTIVE OWNERS.
+        </p>
+        <p class="mt-2 text-xs opacity-50">
+            <a href="#" class="hover:underline">PRIVACY PROTOCOL [ERROR]</a> |
+            <a href="#" class="hover:underline">TERMS OF SERVICE [CORRUPTED]</a>
+        </p>
+    </footer>
+
+    <div id="llm-interpretation-modal" class="llm-modal-overlay">
+        <div class="llm-modal-content">
+            <button class="llm-modal-close-btn" id="llm-modal-close">&times;</button>
+            <h2 class="text-3xl font-bold mb-4 glitch-text" data-text="ABSTRACT INTERPRETATION">ABSTRACT INTERPRETATION</h2>
+            <p class="mb-4">
+                What thoughts does <span id="modal-album-title" class="font-bold"></span> evoke?
+            </p>
+            <textarea id="interpretation-query" rows="4" class="w-full p-2 mb-4 brutal-border bg-gray-200 text-gray-800" placeholder="Enter your query or a fragmented thought here..."></textarea>
+            <button id="generate-interpretation-btn" class="brutal-button w-full text-base">GENERATE INTERPRETATION</button>
+            <div id="interpretation-output-container" class="mt-6 brutal-border p-4 bg-gray-100 hidden">
+                <p id="interpretation-output-text" class="italic text-lg"></p>
+                <p id="interpretation-loading-indicator" class="text-sm text-gray-500 mt-2 hidden">Processing thought patterns...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for Firebase configuration (if needed, not used in this version)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Core Interactivity ---
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+
+        // Konami Code for Secret Message
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiCodePosition = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === konamiCode[konamiCodePosition]) {
+                konamiCodePosition++;
+                if (konamiCodePosition === konamiCode.length) {
+                    document.getElementById('secret-message').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('secret-message').style.display = 'none';
+                    }, 5000); // Hide after 5 seconds
+                    konamiCodePosition = 0; // Reset for next time
+                }
+            } else {
+                konamiCodePosition = 0; // Reset if incorrect key
+            }
+        });
+
+        // Smooth Scroll for Navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                // Prevent default behavior only if it's a valid internal anchor link
+                if (href && href !== '#') {
+                    e.preventDefault();
+                    const targetElement = document.querySelector(href);
+                    if (targetElement) {
+                        // Corrected: Use scrollIntoView() instead of scrollDownIntoView()
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    } else {
+                        console.warn(`Target element for href "${href}" not found.`);
+                    }
+                } else if (href === '#') {
+                    // For href="#", prevent default to avoid scrolling to top unexpectedly
+                    e.preventDefault();
+                }
+            });
+        });
+
+        // --- Three.js 3D Glitch Object ---
+        let scene, camera, renderer, object, material;
+        let ambientLight, pointLight;
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        // New variables for dynamic rotation speed
+        let rotationSpeedX = 0.005;
+        let rotationSpeedY = 0.007;
+
+
+        const initThree = () => {
+            const canvas = document.getElementById('three-canvas');
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Create a custom geometry (e.g., a distorted cube)
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            // In Three.js r125+, BufferGeometry no longer exposes a .vertices array.
+            // Vertex data is accessed via attributes.position.array.
+            const positionAttribute = geometry.getAttribute('position');
+            const positions = positionAttribute.array;
+
+            for (let i = 0; i < positions.length; i += 3) {
+                // Modify x, y, z coordinates
+                positions[i + 0] += (Math.random() - 0.5) * 0.5; // x
+                positions[i + 1] += (Math.random() - 0.5) * 0.5; // y
+                positions[i + 2] += (Math.random() - 0.5) * 0.5; // z
+            }
+            positionAttribute.needsUpdate = true; // Tell Three.js to update the buffer
+
+            // Shader-like material for glitch effect
+            material = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0.0 },
+                    color1: { value: new THREE.Color(0xff00ff) }, // Accent color 1 (magenta)
+                    color2: { value: new THREE.Color(0x00ffff) }, // Accent color 2 (cyan)
+                    distortionFactor: { value: 0.1 }
+                },
+                vertexShader: `
+                    uniform float time;
+                    uniform float distortionFactor;
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normal;
+                        vec3 displacedPosition = position + normal * sin(position.x * 5.0 + time * 2.0) * distortionFactor;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPosition, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec3 color1;
+                    uniform vec3 color2;
+                    varying vec3 vNormal;
+                    void main() {
+                        float intensity = dot(normalize(vNormal), vec3(0.0, 0.0, 1.0));
+                        vec3 mixedColor = mix(color1, color2, abs(sin(time * 0.5 + intensity * 2.0)));
+                        gl_FragColor = vec4(mixedColor, 1.0);
+                    }
+                `,
+                side: THREE.DoubleSide
+            });
+
+            object = new THREE.Mesh(geometry, material);
+            scene.add(object);
+
+            camera.position.z = 5;
+
+            // Lights
+            ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+            scene.add(ambientLight);
+
+            pointLight = new THREE.PointLight(0xffffff, 1, 100);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            document.addEventListener('mousemove', onDocumentMouseMove);
+            window.addEventListener('resize', onWindowResize);
+        };
+
+        const onDocumentMouseMove = (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        };
+
+        const onWindowResize = () => {
+            const canvas = document.getElementById('three-canvas');
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        };
+
+        const animateThree = () => {
+            requestAnimationFrame(animateThree);
+
+            if (object) {
+                // Use dynamic rotation speeds
+                object.rotation.x += rotationSpeedX;
+                object.rotation.y += rotationSpeedY;
+
+                // Make object react to mouse position
+                targetRotationY = mouseX * 0.5;
+                targetRotationX = mouseY * 0.5;
+                object.rotation.y += (targetRotationY - object.rotation.y) * 0.05;
+                object.rotation.x += (targetRotationX - object.rotation.x) * 0.05;
+
+                // Update shader uniforms
+                material.uniforms.time.value += 0.01;
+            }
+
+            renderer.render(scene, camera);
+        };
+
+        // --- Web Audio API for Music Visualization with Tone.js ---
+        let toneAnalyser;
+        let toneSynth = null; // Use a single synth instance for synthetic notes
+        let tonePlayer = null; // Use a single player instance for actual audio files
+        let isPlaying = false;
+        let animationFrameId;
+
+        const visualizerCanvas = document.getElementById('visualizer-canvas');
+        const visualizerCtx = visualizerCanvas.getContext('2d');
+        const currentTrackNameSpan = document.getElementById('current-track-name');
+        const playerStatusSpan = document.getElementById('player-status');
+        const pauseButton = document.getElementById('pause-button');
+        const resumeButton = document.getElementById('resume-button');
+        const stopButton = document.getElementById('stop-button');
+
+        // Set canvas dimensions
+        const resizeVisualizerCanvas = () => {
+            visualizerCanvas.width = visualizerCanvas.clientWidth;
+            visualizerCanvas.height = visualizerCanvas.clientHeight;
+        };
+        window.addEventListener('resize', resizeVisualizerCanvas);
+
+        const setupToneAudio = async () => {
+            // Ensure Tone.js context is started only once and is running
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+                console.log("Tone.js audio context started.");
+            }
+
+            // Create analyser if it doesn't exist
+            if (!toneAnalyser) {
+                // Initialize Analyser with 'waveform' for time domain data (raw audio samples)
+                toneAnalyser = new Tone.Analyser('waveform', 256);
+                toneAnalyser.smoothing = 0.8;
+                toneAnalyser.toDestination(); // Connect analyser to master output for visualization
+            }
+
+            // Create a synth if it doesn't exist (for synthetic playback)
+            if (!toneSynth) {
+                toneSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: {
+                        type: "sawtooth" // A harsh, industrial sound, typical for Aphex Twin
+                    },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.1,
+                        sustain: 0.2,
+                        release: 1
+                    }
+                });
+            }
+        };
+
+        const startVisualization = async (trackName, audioUrl) => {
+            await setupToneAudio(); // Ensure Tone.js context and nodes are set up
+
+            // Stop any existing playback (synth or player)
+            if (isPlaying) {
+                Tone.Transport.stop();
+                Tone.Transport.cancel();
+                if (toneSynth) {
+                    toneSynth.disconnect(); // Disconnect synth from analyser
+                    toneSynth.releaseAll();
+                }
+                if (tonePlayer) {
+                    tonePlayer.stop();
+                    tonePlayer.dispose(); // Clean up player resources
+                    tonePlayer = null;
+                }
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            currentTrackNameSpan.textContent = trackName;
+            playerStatusSpan.textContent = '(Loading...)';
+            pauseButton.classList.remove('hidden');
+            stopButton.classList.remove('hidden');
+            resumeButton.classList.add('hidden'); // Hide resume initially
+
+            isPlaying = true;
+            drawVisualizer(); // Start the visualization loop
+
+            if (audioUrl) {
+                // Attempt to play actual audio file
+                tonePlayer = new Tone.Player({
+                    url: audioUrl,
+                    autostart: true,
+                    loop: true, // Loop the track for continuous visualization
+                    onload: () => {
+                        console.log(`Audio loaded and playing: ${trackName}`);
+                        playerStatusSpan.textContent = '(Playing)';
+                    },
+                    onerror: (e) => {
+                        console.warn(`Error loading audio ${audioUrl}: ${e.message}. This might be due to browser CORS policies preventing direct loading from raw GitHub links in this environment. Falling back to synthetic sound. For consistent playback, consider hosting files on a dedicated server or cloud storage (e.g., Google Cloud Storage, Amazon S3).`, e);
+                        playerStatusSpan.textContent = '(Error loading, playing synthetic)';
+                        // Fallback to synthetic sound if loading fails
+                        if (tonePlayer) {
+                            tonePlayer.dispose(); // Clean up failed player
+                            tonePlayer = null;
+                        }
+                        startSyntheticPlayback();
+                    }
+                }).connect(toneAnalyser); // Connect player to analyser
+            } else {
+                // Fallback to synthetic sound if no audioUrl provided
+                console.log(`No audio URL provided for "${trackName}". Playing synthetic sound.`);
+                startSyntheticPlayback();
+            }
+
+            function startSyntheticPlayback() {
+                toneSynth.connect(toneAnalyser); // Ensure synth is connected
+                let noteIndex = 0;
+                const notes = ["C3", "G3", "C4", "Eb4", "G4", "A4"];
+
+                Tone.Transport.scheduleRepeat((time) => {
+                    const note = notes[noteIndex % notes.length];
+                    toneSynth.triggerAttackRelease(note, "8n", time, Math.random() * 0.5 + 0.5);
+                    noteIndex++;
+                }, "8n");
+                Tone.Transport.start();
+                playerStatusSpan.textContent = '(Playing Synthetic)';
+            }
+        };
+
+        const drawVisualizer = () => {
+            if (!isPlaying) {
+                return;
+            }
+
+            animationFrameId = requestAnimationFrame(drawVisualizer);
+
+            const dataArray = toneAnalyser.getValue(); // Get time domain data
+            const bufferLength = dataArray.length;
+
+            visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+            visualizerCtx.lineWidth = 2;
+            visualizerCtx.strokeStyle = 'var(--accent-color-1)'; // Use accent color for waveform
+            visualizerCtx.beginPath();
+
+            const sliceWidth = visualizerCanvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i];
+                const y = (v + 1) / 2 * visualizerCanvas.height;
+
+                if (i === 0) {
+                    visualizerCtx.moveTo(x, y);
+                } else {
+                    visualizerCtx.lineTo(x, y);
+                }
+
+                x += sliceWidth;
+            }
+            visualizerCtx.lineTo(visualizerCanvas.width, visualizerCanvas.height / 2); // Connect to center
+            visualizerCtx.stroke();
+
+            // Make 3D object react to audio (e.g., scale or distortion)
+            let sumSquares = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                sumSquares += dataArray[i] * dataArray[i];
+            }
+            const rms = Math.sqrt(sumSquares / bufferLength);
+
+            if (object && material) {
+                const scaleFactor = 1 + rms * 0.5; // Scale from 1 to 1.5 based on RMS
+                object.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+                // Adjust shader distortion based on RMS
+                material.uniforms.distortionFactor.value = 0.1 + rms * 0.5; // More distortion with louder audio
+            }
+        };
+
+        // Event listeners for Discography section
+        document.querySelectorAll('.play-track-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const albumTitle = e.target.dataset.albumTitle;
+                const audioUrl = e.target.dataset.audioUrl; // Get the audio URL from data attribute
+                await startVisualization(albumTitle, audioUrl);
+            });
+        });
+
+        pauseButton.addEventListener('click', () => {
+            if (Tone.Transport.state === 'started') { // For synthetic playback
+                Tone.Transport.pause();
+            }
+            if (tonePlayer && tonePlayer.state === 'started') { // For actual audio playback
+                tonePlayer.pause();
+            }
+            isPlaying = false;
+            playerStatusSpan.textContent = '(Paused)';
+            pauseButton.classList.add('hidden');
+            resumeButton.classList.remove('hidden');
+            cancelAnimationFrame(animationFrameId); // Stop visualization
+        });
+
+        resumeButton.addEventListener('click', () => {
+            if (Tone.Transport.state === 'paused') { // For synthetic playback
+                Tone.Transport.start();
+            }
+            if (tonePlayer && tonePlayer.state === 'paused') { // For actual audio playback
+                tonePlayer.start();
+            }
+            isPlaying = true;
+            playerStatusSpan.textContent = '(Playing)';
+            pauseButton.classList.remove('hidden');
+            resumeButton.classList.add('hidden');
+            drawVisualizer(); // Resume visualization
+        });
+
+        stopButton.addEventListener('click', () => {
+            Tone.Transport.stop();
+            Tone.Transport.cancel(); // Clear all scheduled events for synthetic
+            if (toneSynth) toneSynth.releaseAll(); // Stop all synthetic notes
+            if (tonePlayer) { // Stop and dispose actual player
+                tonePlayer.stop();
+                tonePlayer.dispose();
+                tonePlayer = null;
+            }
+            isPlaying = false;
+            playerStatusSpan.textContent = '(Stopped)';
+            pauseButton.classList.add('hidden');
+            resumeButton.classList.add('hidden');
+            stopButton.classList.add('hidden');
+            cancelAnimationFrame(animationFrameId);
+            visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height); // Clear canvas
+            if (object) { // Reset 3D object scale
+                object.scale.set(1, 1, 1);
+                material.uniforms.distortionFactor.value = 0.1;
+            }
+        });
+
+        // --- Gemini API Integration for Fun Facts ---
+        const generateFactButton = document.getElementById('generate-aphex-fact');
+        const generatedFactContainer = document.getElementById('generated-fact-container');
+        const generatedFactText = document.getElementById('generated-fact-text');
+        const factLoadingIndicator = document.getElementById('fact-loading-indicator');
+
+        generateFactButton.addEventListener('click', async () => {
+            generatedFactContainer.classList.add('hidden'); // Hide previous fact
+            generatedFactText.textContent = ''; // Clear text
+            factLoadingIndicator.classList.remove('hidden'); // Show loading indicator
+
+            const prompt = "Generate a short, peculiar, and slightly cryptic 'fact' or 'thought' in the style of Aphex Twin's persona. It should be abstract, perhaps slightly technical, or humorously detached. Max 3 sentences.";
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will automatically provide this at runtime
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    generatedFactText.textContent = text;
+                    generatedFactContainer.classList.remove('hidden'); // Show the container
+                } else {
+                    generatedFactText.textContent = 'ERROR: Anomaly generation failed. Please try again.';
+                    generatedFactContainer.classList.remove('hidden');
+                    console.error('Unexpected API response structure:', result);
+                }
+            } catch (error) {
+                generatedFactText.textContent = 'ERROR: Failed to connect to the anomaly generator.';
+                generatedFactContainer.classList.remove('hidden');
+                console.error('Error fetching from Gemini API:', error);
+            } finally {
+                factLoadingIndicator.classList.add('hidden'); // Hide loading indicator
+            }
+        });
+
+        // --- LLM Interpretation Modal Logic ---
+        const llmModal = document.getElementById('llm-interpretation-modal');
+        const llmModalCloseBtn = document.getElementById('llm-modal-close');
+        const modalAlbumTitle = document.getElementById('modal-album-title');
+        const interpretationQueryInput = document.getElementById('interpretation-query');
+        const generateInterpretationBtn = document.getElementById('generate-interpretation-btn');
+        const interpretationOutputContainer = document.getElementById('interpretation-output-container');
+        const interpretationOutputText = document.getElementById('interpretation-output-text');
+        const interpretationLoadingIndicator = document.getElementById('interpretation-loading-indicator');
+
+        document.querySelectorAll('.interpret-album-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const albumTitle = e.target.dataset.albumTitle;
+                modalAlbumTitle.textContent = albumTitle;
+                interpretationQueryInput.value = ''; // Clear previous query
+                interpretationOutputText.textContent = ''; // Clear previous output
+                interpretationOutputContainer.classList.add('hidden'); // Hide output container
+                interpretationLoadingIndicator.classList.add('hidden'); // Hide loading indicator
+                llmModal.style.display = 'flex'; // Show modal
+            });
+        });
+
+        llmModalCloseBtn.addEventListener('click', () => {
+            llmModal.style.display = 'none'; // Hide modal
+        });
+
+        // Close modal if clicked outside content
+        llmModal.addEventListener('click', (e) => {
+            if (e.target === llmModal) {
+                llmModal.style.display = 'none';
+            }
+        });
+
+        generateInterpretationBtn.addEventListener('click', async () => {
+            const albumTitle = modalAlbumTitle.textContent;
+            const userQuery = interpretationQueryInput.value.trim();
+
+            if (!userQuery) {
+                interpretationOutputText.textContent = 'Please enter a query or thought for interpretation.';
+                interpretationOutputContainer.classList.remove('hidden');
+                return;
+            }
+
+            interpretationOutputText.textContent = '';
+            interpretationOutputContainer.classList.add('hidden');
+            interpretationLoadingIndicator.classList.remove('hidden');
+
+            const prompt = `Given the Aphex Twin album "${albumTitle}", provide a short, abstract, and cryptic interpretation or response to the following user thought/query: "${userQuery}". Respond in the style of Aphex Twin's enigmatic persona, using detached, slightly technical, or philosophical language. Keep it concise.`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will automatically provide this at runtime
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const interpretation = result.candidates[0].content.parts[0].text;
+                    interpretationOutputText.textContent = interpretation;
+                    interpretationOutputContainer.classList.remove('hidden');
+                } else {
+                    interpretationOutputText.textContent = 'ERROR: Interpretation matrix corrupted. Try again.';
+                    interpretationOutputContainer.classList.remove('hidden');
+                    console.error('Unexpected API response structure:', result);
+                }
+            } catch (error) {
+                interpretationOutputText.textContent = 'ERROR: Connection severed. Temporal distortion detected.';
+                interpretationOutputContainer.classList.remove('hidden');
+                console.error('Error fetching from Gemini API:', error);
+            } finally {
+                visualLoadingIndicator.classList.add('hidden');
+            }
+        });
+
+        // --- Synaptic Shift / Visualize Thought Logic ---
+        const visualQueryInput = document.getElementById('visual-query-input');
+        const generateVisualBtn = document.getElementById('generate-visual-btn');
+        const visualOutputContainer = document.getElementById('visual-output-container');
+        const visualMoodText = document.getElementById('visual-mood-text');
+        const visualLoadingIndicator = document.getElementById('visual-loading-indicator');
+
+        // Function to apply the visual mood to the 3D object
+        const applyVisualMood = (mood) => {
+            if (!object || !material) return;
+
+            // Reset to defaults first to avoid compounding effects if parsing fails
+            material.uniforms.distortionFactor.value = 0.1;
+            material.uniforms.color1.value.set(0xff00ff); // Magenta
+            material.uniforms.color2.value.set(0x00ffff); // Cyan
+            rotationSpeedX = 0.005;
+            rotationSpeedY = 0.007;
+
+            // Simple keyword-based mood parsing
+            mood = mood.toLowerCase();
+
+            if (mood.includes('chaotic') || mood.includes('fractured') || mood.includes('disrupted')) {
+                material.uniforms.distortionFactor.value = Math.min(0.5, 0.1 + Math.random() * 0.4);
+                rotationSpeedX = Math.random() * 0.03 + 0.01;
+                rotationSpeedY = Math.random() * 0.03 + 0.01;
+                material.uniforms.color1.value.set(0xff0000); // Red
+                material.uniforms.color2.value.set(0x0000ff); // Blue
+            }
+            if (mood.includes('serene') || mood.includes('calm') || mood.includes('ambient')) {
+                material.uniforms.distortionFactor.value = Math.max(0.05, 0.1 - Math.random() * 0.05);
+                rotationSpeedX = Math.random() * 0.005;
+                rotationSpeedY = Math.random() * 0.005;
+                material.uniforms.color1.value.set(0x66ccff); // Light Blue
+                material.uniforms.color2.value.set(0x99ff99); // Light Green
+            }
+            if (mood.includes('industrial') || mood.includes('metallic') || mood.includes('cold')) {
+                material.uniforms.distortionFactor.value = Math.min(0.3, 0.1 + Math.random() * 0.2);
+                material.uniforms.color1.value.set(0x808080); // Grey
+                material.uniforms.color2.value.set(0xaaaaaa); // Lighter Grey
+            }
+            if (mood.includes('ethereal') || mood.includes('dreamy') || mood.includes('fluid')) {
+                material.uniforms.distortionFactor.value = Math.min(0.2, 0.1 + Math.random() * 0.1);
+                rotationSpeedX = Math.random() * 0.007 + 0.002;
+                rotationSpeedY = Math.random() * 0.007 + 0.002;
+                material.uniforms.color1.value.set(0xcc99ff); // Lavender
+                material.uniforms.color2.value.set(0xffccff); // Pink
+            }
+            if (mood.includes('glitchy') || mood.includes('digital') || mood.includes('broken')) {
+                material.uniforms.distortionFactor.value = Math.min(0.7, 0.3 + Math.random() * 0.4);
+                rotationSpeedX = Math.random() * 0.05 + 0.02;
+                rotationSpeedY = Math.random() * 0.05 + 0.02;
+                material.uniforms.color1.value.set(0xff00ff); // Magenta
+                material.uniforms.color2.value.set(0x00ff00); // Green (for contrast)
+            }
+        };
+
+
+        generateVisualBtn.addEventListener('click', async () => {
+            const userThought = visualQueryInput.value.trim();
+
+            if (!userThought) {
+                visualMoodText.textContent = 'Please enter a thought to visualize.';
+                visualOutputContainer.classList.remove('hidden');
+                return;
+            }
+
+            visualMoodText.textContent = '';
+            visualOutputContainer.classList.add('hidden');
+            visualLoadingIndicator.classList.remove('hidden');
+
+            const prompt = `Given the abstract concept/thought: "${userThought}", describe a concise visual "mood" in 2-3 words (e.g., "chaotic, industrial", "serene, ethereal", "glitchy, fractured", "cold, mechanical"). Do not provide explanations, only the mood words.`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; // Canvas will automatically provide this at runtime
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const mood = result.candidates[0].content.parts[0].text.trim();
+                    visualMoodText.textContent = `Mood: ${mood}`;
+                    applyVisualMood(mood); // Apply the generated mood to the 3D object
+                    visualOutputContainer.classList.remove('hidden');
+                } else {
+                    visualMoodText.textContent = 'ERROR: Visual synthesis failed. Data stream interrupted.';
+                    visualOutputContainer.classList.remove('hidden');
+                    console.error('Unexpected API response structure:', result);
+                }
+            } catch (error) {
+                visualMoodText.textContent = 'ERROR: Connection to visual synthesis engine lost.';
+                visualOutputContainer.classList.remove('hidden');
+                console.error('Error fetching from Gemini API:', error);
+            } finally {
+                visualLoadingIndicator.classList.add('hidden');
+            }
+        });
+
+
+        // Initial setup on window load
+        window.onload = function () {
+            // Initialize 3D canvas
+            initThree();
+            animateThree();
+
+            // Resize visualizer canvas initially
+            resizeVisualizerCanvas();
+
+            // Scroll to discography when explore button is clicked
+            document.getElementById('explore-button').addEventListener('click', () => {
+                // Corrected: Use scrollIntoView() instead of scrollDownIntoView()
+                document.getElementById('discography').scrollIntoView({ behavior: 'smooth' });
+            });
+        };
+    </script>
+</body>
+</html>
